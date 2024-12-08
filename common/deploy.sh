@@ -50,7 +50,7 @@ fi
 # ミドルウェア・Appの再起動
 sudo systemctl restart mysql
 sudo systemctl reload nginx
-sudo systemctl reload isuride-matcher.service
+sudo systemctl restart isuride-matcher.service
 sudo systemctl restart $SERVICE_NAME
 
 # slow query logの有効化
