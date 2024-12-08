@@ -192,10 +192,12 @@ func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotification
 			// _, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Status, data.CreatedAt, data.UpdateAt)
 			_, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Chair.Stats.TotalRidesCount, data.Chair.Stats.TotalEvaluationAvg, data.CreatedAt, data.UpdateAt)
 			if err != nil {
+				fmt.Println("sse error writing response to client")
 				return
 			}
 			err = rc.Flush()
 			if err != nil {
+				fmt.Println("sse error flushing")
 				return
 			}
 		}
