@@ -19,7 +19,7 @@ var chairMu = make(map[string]*sync.RWMutex)
 var chairRideCacheMap = make(map[string]*ChairRideCache)
 
 
-func CacheChairLocationInfo(l *ChairLocation) {
+func CacheChairLocationInfo(l *ChairLocation) *ChairRideCache {
 	globalMu.Lock()
 	mu, found := chairMu[l.ChairID]
 	if !found {
@@ -48,6 +48,8 @@ func CacheChairLocationInfo(l *ChairLocation) {
 		
 		chairRideCacheMap[l.ChairID] = crc
 	}
+
+	return chairRideCacheMap[l.ChairID]
 }
 
 func GetCacheChairLocationInfo(chairId string) (rideInfo *ChairRideCache, found bool) {
@@ -63,4 +65,9 @@ func GetCacheChairLocationInfo(chairId string) (rideInfo *ChairRideCache, found 
 
 	rideInfo, found = chairRideCacheMap[chairId]
 	return
+}
+
+func InitCacheLocationInfo(l *ChairLocation, distance int) {
+	rideInfo := CacheChairLocationInfo(l)
+	rideInfo.Distance = int64(distance)
 }

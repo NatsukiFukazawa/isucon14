@@ -142,6 +142,8 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	LoadInitDistance(w, ctx)
+
 	writeJSON(w, http.StatusOK, postInitializeResponse{Language: "go"})
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -174,6 +175,9 @@ type chairWithDetail struct {
 	UpdatedAt              time.Time    `db:"updated_at"`
 	TotalDistance          int          `db:"total_distance"`
 	TotalDistanceUpdatedAt sql.NullTime `db:"total_distance_updated_at"`
+	Longitude              int          `db:"longitude"`
+	Latitude               int          `db:"latitude"`
+	ChairLocationId        string       `db:"chair_location_id"`
 }
 
 type ownerGetChairResponse struct {
@@ -226,4 +230,61 @@ func ownerGetChairs(w http.ResponseWriter, r *http.Request) {
 	} 
 
 	writeJSON(w, http.StatusOK, res)
+}
+
+// OwnerChairの走行距離初期化
+func LoadInitDistance(w http.ResponseWriter, ctx context.Context) {
+	chairs := []chairWithDetail{}
+	if err := db.SelectContext(ctx, &chairs, `
+		SELECT 
+    		c.id,
+    		c.owner_id,
+    		c.name,
+    		c.access_token,
+    		c.model,
+    		c.is_active,
+    		c.created_at,
+    		c.updated_at,
+    		IFNULL(d.total_distance, 0) AS total_distance,
+    		d.total_distance_updated_at,
+    		d.latitude,
+    		d.longitude,
+			d.chair_location_id
+		FROM chairs c
+		LEFT JOIN (
+    		SELECT 
+        		tmp.chair_id,
+        		SUM(IFNULL(tmp.distance, 0)) AS total_distance,
+        		MAX(tmp.created_at) AS total_distance_updated_at,
+        		-- MAX(created_at)と同じレコードのlatitudeとlongitudeを取得
+        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.latitude ORDER BY tmp.created_at DESC), ',', 1) AS latitude,
+        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.longitude ORDER BY tmp.created_at DESC), ',', 1) AS longitude
+        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.id ORDER BY tmp.created_at DESC), ',', 1) AS chair_location_id
+    		FROM (
+        		SELECT 
+            		chair_id,
+            		created_at,
+            		ABS(latitude - LAG(latitude) OVER (PARTITION BY chair_id ORDER BY created_at)) +
+            		ABS(longitude - LAG(longitude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance,
+            		latitude,
+            		longitude
+        		FROM chair_locations
+    		) tmp
+    		GROUP BY tmp.chair_id
+		) d ON d.chair_id = c.id
+	`); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, chair := range chairs {
+		chairLocation := &ChairLocation{
+			ID: chair.ChairLocationId,
+			ChairID: chair.ID,
+			Latitude: chair.Latitude,
+			Longitude: chair.Longitude,
+			CreatedAt: chair.TotalDistanceUpdatedAt.Time,
+		}
+		InitCacheLocationInfo(chairLocation, chair.TotalDistance)
+	}
 }
