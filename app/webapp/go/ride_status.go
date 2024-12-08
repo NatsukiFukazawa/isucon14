@@ -39,8 +39,7 @@ func CacheRideStatus(rs *RideStatus) {
 	globalRideStatusMu.Unlock()
 	defer mu.Unlock()
 
-	crs, found := rideStatusCacheMap[rideId]
-	rideStatusCacheMap[rideId] = crs
+	rideStatusCacheMap[rideId] = rs
 }
 
 func GetCacheLatestRideStatus(rideId string) (rideStatus *RideStatus, found bool) {
