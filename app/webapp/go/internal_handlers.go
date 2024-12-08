@@ -54,6 +54,7 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("update rides", ride.ID, "chair_id", matched.ID)
 	if _, err := db.ExecContext(ctx, "UPDATE rides SET chair_id = ? WHERE id = ?", matched.ID, ride.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
