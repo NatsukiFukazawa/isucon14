@@ -346,10 +346,12 @@ func appPostRides(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rideStatusId := ulid.Make().String()
+	insertStatusTime := time.Now()
 	if _, err := tx.ExecContext(
 		ctx,
-		`INSERT INTO ride_statuses (id, ride_id, status) VALUES (?, ?, ?)`,
-		ulid.Make().String(), rideID, "MATCHING",
+		`INSERT INTO ride_statuses (id, ride_id, status, created_at) VALUES (?, ?, ?, ?)`,
+		rideStatusId, rideID, "MATCHING", insertStatusTime,
 	); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -431,6 +433,9 @@ func appPostRides(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+
+	// キャッシュ ride_status
+	CacheRideStatusWrapper(rideStatusId, rideID, "MATCHING", insertStatusTime, nil, nil)
 
 	writeJSON(w, http.StatusAccepted, &appPostRidesResponse{
 		RideID: rideID,
@@ -562,10 +567,12 @@ func appPostRideEvaluatation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rideStatusId := ulid.Make().String()
+	insertStatusTime := time.Now()
 	_, err = tx.ExecContext(
 		ctx,
-		`INSERT INTO ride_statuses (id, ride_id, status) VALUES (?, ?, ?)`,
-		ulid.Make().String(), rideID, "COMPLETED")
+		`INSERT INTO ride_statuses (id, ride_id, status, created_at) VALUES (?, ?, ?, ?)`,
+		rideStatusId, rideID, "COMPLETED", insertStatusTime)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -624,6 +631,9 @@ func appPostRideEvaluatation(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+
+	// キャッシュ ride_status
+	CacheRideStatusWrapper(rideStatusId, rideID, "COMPLETED", insertStatusTime, nil, nil)
 
 	writeJSON(w, http.StatusOK, &appPostRideEvaluationResponse{
 		CompletedAt: ride.UpdatedAt.UnixMilli(),
@@ -744,8 +754,10 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	appSentAt := time.Now()
 	if yetSentRideStatus.ID != "" {
-		_, err := tx.ExecContext(ctx, `UPDATE ride_statuses SET app_sent_at = CURRENT_TIMESTAMP(6) WHERE id = ?`, yetSentRideStatus.ID)
+		appSentAt = time.Now()
+		_, err := tx.ExecContext(ctx, `UPDATE ride_statuses SET app_sent_at = ? WHERE id = ?`, appSentAt, yetSentRideStatus.ID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
@@ -755,6 +767,10 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	if err := tx.Commit(); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
+	}
+
+	if yetSentRideStatus.ID != "" {
+		UpdateCacheRideStatusAppSentAt(yetSentRideStatus.ID, yetSentRideStatus.RideID, appSentAt)
 	}
 
 	writeJSON(w, http.StatusOK, response)
