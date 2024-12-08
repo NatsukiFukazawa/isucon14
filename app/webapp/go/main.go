@@ -21,12 +21,14 @@ import (
 )
 
 var db *sqlx.DB
+var chairCache map[string]Chair
 
 func main() {
 	go standalone.Integrate(":8888")
 	mux := setup()
 	slog.Info("Listening on :8080")
 	http.ListenAndServe(":8080", mux)
+	chairCache = make(map[string]Chair)
 }
 
 func setup() http.Handler {
@@ -138,6 +140,19 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := db.ExecContext(ctx, "UPDATE settings SET value = ? WHERE name = 'payment_gateway_url'", req.PaymentServer); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	chairs := []Chair{}
+	err := db.SelectContext(
+		ctx,
+		&chairs,
+		`SELECT * FROM chairs`,
+	)
+	for _, chair := range chairs {
+		chairCache[chair.ID] = chair
+	}
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}

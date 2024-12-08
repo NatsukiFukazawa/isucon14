@@ -54,6 +54,13 @@ func chairPostChairs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+	insertedChair := &Chair{}
+	if err := db.GetContext(ctx, insertedChair, "SELECT * FROM chairs WHERE id = ?", chairID); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	chairCache[chairID] = *insertedChair
 
 	http.SetCookie(w, &http.Cookie{
 		Path:  "/",
@@ -81,11 +88,15 @@ func chairPostActivity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.ExecContext(ctx, "UPDATE chairs SET is_active = ? WHERE id = ?", req.IsActive, chair.ID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
+	cachedChair := chairCache[chair.ID]
+	cachedChair.IsActive = req.IsActive
+	chairCache[chair.ID] = cachedChair
+	// _, err := db.ExecContext(ctx, "UPDATE chairs SET is_active = ? WHERE id = ?", req.IsActive, chair.ID)
+
+	// if err != nil {
+	// 	writeError(w, http.StatusInternalServerError, err)
+	// 	return
+	// }
 
 	w.WriteHeader(http.StatusNoContent)
 }

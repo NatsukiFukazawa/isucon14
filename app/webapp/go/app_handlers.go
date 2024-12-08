@@ -239,11 +239,9 @@ func appGetRides(w http.ResponseWriter, r *http.Request) {
 
 		item.Chair = getAppRidesResponseItemChair{}
 
-		chair := &Chair{}
-		if err := tx.GetContext(ctx, chair, `SELECT * FROM chairs WHERE id = ?`, ride.ChairID); err != nil {
-			writeError(w, http.StatusInternalServerError, err)
-			return
-		}
+		chair := Chair{}
+		chair = chairCache[ride.ChairID.String]
+
 		item.Chair.ID = chair.ID
 		item.Chair.Name = chair.Name
 		item.Chair.Model = chair.Model
@@ -724,11 +722,8 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ride.ChairID.Valid {
-		chair := &Chair{}
-		if err := tx.GetContext(ctx, chair, `SELECT * FROM chairs WHERE id = ?`, ride.ChairID); err != nil {
-			writeError(w, http.StatusInternalServerError, err)
-			return
-		}
+		chair := Chair{}
+		chair = chairCache[ride.ChairID.String]
 
 		stats, err := getChairStats(ctx, tx, chair.ID)
 		if err != nil {
@@ -872,14 +867,8 @@ func appGetNearbyChairs(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	chairs := []Chair{}
-	err = tx.SelectContext(
-		ctx,
-		&chairs,
-		`SELECT * FROM chairs`,
-	)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
+	for _, chair := range chairCache {
+		chairs = append(chairs, chair)
 	}
 
 	nearbyChairs := []appGetNearbyChairsResponseChair{}
