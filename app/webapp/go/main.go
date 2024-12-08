@@ -2,6 +2,7 @@ package main
 
 import (
 	crand "crypto/rand"
+	"sync"
 
 	"github.com/goccy/go-json"
 	// "encoding/json"
@@ -22,6 +23,9 @@ import (
 
 var db *sqlx.DB
 var chairCache map[string]*Chair
+
+// 固有操作管理
+var chairCacheMu = make(map[string]*sync.RWMutex)
 
 func main() {
 	go standalone.Integrate(":8888")

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -88,15 +89,16 @@ func chairPostActivity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mu, found := chairCacheMu[chair.ID]
+	if !found {
+		mu = &sync.RWMutex{}
+		chairCacheMu[chair.ID] = mu
+	}
+	mu.Lock()
+	defer mu.Unlock()
 	cachedChair := chairCache[chair.ID]
 	cachedChair.IsActive = req.IsActive
 	chairCache[chair.ID] = cachedChair
-	// _, err := db.ExecContext(ctx, "UPDATE chairs SET is_active = ? WHERE id = ?", req.IsActive, chair.ID)
-
-	// if err != nil {
-	// 	writeError(w, http.StatusInternalServerError, err)
-	// 	return
-	// }
 
 	w.WriteHeader(http.StatusNoContent)
 }

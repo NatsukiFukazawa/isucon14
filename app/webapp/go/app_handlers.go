@@ -728,7 +728,7 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	if ride.ChairID.Valid {
 		chair, found := chairCache[ride.ChairID.String]
 
-		fmt.Println("chair", chair, ride.ChairID.String)
+		fmt.Println("chair", chair, ride)
 		if !found {
 			writeError(w, http.StatusInternalServerError, errors.New("chair not found"))
 			return
