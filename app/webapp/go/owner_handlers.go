@@ -267,7 +267,8 @@ func LoadInitDistance(w http.ResponseWriter, ctx context.Context) {
             		ABS(latitude - LAG(latitude) OVER (PARTITION BY chair_id ORDER BY created_at)) +
             		ABS(longitude - LAG(longitude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance,
             		latitude,
-            		longitude
+            		longitude,
+					id
         		FROM chair_locations
     		) tmp
     		GROUP BY tmp.chair_id
