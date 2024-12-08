@@ -1,9 +1,9 @@
 #!/bin/bash -eux
 
 # デプロイスクリプト書き換える
-APP_NAME=isucondition
-WEBAPP_DIR=/home/isucon/webapp/go
-SERVICE_NAME=${APP_NAME}.go
+APP_NAME=isuride # change
+WEBAPP_DIR=/home/isucon/webapp/go # change
+SERVICE_NAME=${APP_NAME}-go.service # change
 
 sudo cp -f etc/nginx/nginx.conf /etc/nginx/nginx.conf
 
