@@ -161,6 +161,9 @@ func chairPostCoordinate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Commit後にキャッシュするで問題ない？
+	CacheChairLocationInfo(location)
+
 	writeJSON(w, http.StatusOK, &chairPostCoordinateResponse{
 		RecordedAt: location.CreatedAt.UnixMilli(),
 	})
