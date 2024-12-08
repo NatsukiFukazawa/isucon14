@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -174,6 +175,9 @@ type chairWithDetail struct {
 	UpdatedAt              time.Time    `db:"updated_at"`
 	TotalDistance          int          `db:"total_distance"`
 	TotalDistanceUpdatedAt sql.NullTime `db:"total_distance_updated_at"`
+	Longitude              sql.NullInt64  `db:"longitude"`
+	Latitude               sql.NullInt64  `db:"latitude"`
+	ChairLocationId        sql.NullString `db:"chair_location_id"`
 }
 
 type ownerGetChairResponse struct {
@@ -194,48 +198,98 @@ func ownerGetChairs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	owner := ctx.Value("owner").(*Owner)
 
-	chairs := []chairWithDetail{}
-	if err := db.SelectContext(ctx, &chairs, `SELECT id,
-       owner_id,
-       name,
-       access_token,
-       model,
-       is_active,
-       created_at,
-       updated_at,
-       IFNULL(total_distance, 0) AS total_distance,
-       total_distance_updated_at
-FROM chairs
-       LEFT JOIN (SELECT chair_id,
-                          SUM(IFNULL(distance, 0)) AS total_distance,
-                          MAX(created_at)          AS total_distance_updated_at
-                   FROM (SELECT chair_id,
-                                created_at,
-                                ABS(latitude - LAG(latitude) OVER (PARTITION BY chair_id ORDER BY created_at)) +
-                                ABS(longitude - LAG(longitude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance
-                         FROM chair_locations) tmp
-                   GROUP BY chair_id) distance_table ON distance_table.chair_id = chairs.id
-WHERE owner_id = ?
-`, owner.ID); err != nil {
+	chairs := []Chair{}
+	if err := db.SelectContext(ctx, &chairs, `SELECT * FROM chairs WHERE owner_id = ?`, owner.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-
+	
 	res := ownerGetChairResponse{}
 	for _, chair := range chairs {
-		c := ownerGetChairResponseChair{
+		rideInfo, found := GetCacheChairLocationInfo(chair.ID)
+
+		totalDistance := 0
+		var totalDistanceUpdatedAt *int64 = nil
+		if found {
+			totalDistance = int(rideInfo.Distance)
+			lastChairLocationCreatedAt := rideInfo.ChairLocation.CreatedAt
+			t := lastChairLocationCreatedAt.UnixMilli()
+			totalDistanceUpdatedAt = &t
+		}
+
+		c := ownerGetChairResponseChair {
 			ID:            chair.ID,
 			Name:          chair.Name,
 			Model:         chair.Model,
 			Active:        chair.IsActive,
 			RegisteredAt:  chair.CreatedAt.UnixMilli(),
-			TotalDistance: chair.TotalDistance,
-		}
-		if chair.TotalDistanceUpdatedAt.Valid {
-			t := chair.TotalDistanceUpdatedAt.Time.UnixMilli()
-			c.TotalDistanceUpdatedAt = &t
+			TotalDistance: totalDistance,
+			TotalDistanceUpdatedAt: totalDistanceUpdatedAt,
 		}
 		res.Chairs = append(res.Chairs, c)
-	}
+	} 
+
 	writeJSON(w, http.StatusOK, res)
+}
+
+// OwnerChairの走行距離初期化
+func LoadInitDistance(w http.ResponseWriter, ctx context.Context) {
+	chairs := []chairWithDetail{}
+	if err := db.SelectContext(ctx, &chairs, `
+		SELECT 
+    		c.id,
+    		c.owner_id,
+    		c.name,
+    		c.access_token,
+    		c.model,
+    		c.is_active,
+    		c.created_at,
+    		c.updated_at,
+    		IFNULL(d.total_distance, 0) AS total_distance,
+    		d.total_distance_updated_at,
+    		d.latitude,
+    		d.longitude,
+			d.chair_location_id
+		FROM chairs c
+		LEFT JOIN (
+    		SELECT 
+        		tmp.chair_id,
+        		SUM(IFNULL(tmp.distance, 0)) AS total_distance,
+        		MAX(tmp.created_at) AS total_distance_updated_at,
+        		-- MAX(created_at)と同じレコードのlatitudeとlongitudeを取得
+        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.latitude ORDER BY tmp.created_at DESC), ',', 1) AS latitude,
+        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.longitude ORDER BY tmp.created_at DESC), ',', 1) AS longitude,
+        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.id ORDER BY tmp.created_at DESC), ',', 1) AS chair_location_id
+    		FROM (
+        		SELECT 
+            		chair_id,
+            		created_at,
+            		ABS(latitude - LAG(latitude) OVER (PARTITION BY chair_id ORDER BY created_at)) +
+            		ABS(longitude - LAG(longitude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance,
+            		latitude,
+            		longitude,
+					id
+        		FROM chair_locations
+    		) tmp
+    		GROUP BY tmp.chair_id
+		) d ON d.chair_id = c.id
+	`); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, chair := range chairs {
+		if !chair.ChairLocationId.Valid {
+			continue
+		}
+
+		chairLocation := &ChairLocation{
+			ID: chair.ChairLocationId.String,
+			ChairID: chair.ID,
+			Latitude: int(chair.Latitude.Int64),
+			Longitude: int(chair.Longitude.Int64),
+			CreatedAt: chair.TotalDistanceUpdatedAt.Time,
+		}
+		InitCacheLocationInfo(chairLocation, chair.TotalDistance)
+	}
 }

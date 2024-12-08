@@ -285,8 +285,8 @@ type executableGet interface {
 
 func getLatestRideStatus(ctx context.Context, tx executableGet, rideID string) (string, error) {
 	status := ""
-	if err := tx.GetContext(ctx, &status, `SELECT status FROM ride_statuses WHERE ride_id = ? ORDER BY created_at DESC LIMIT 1`, rideID); err != nil {
-		return "", err
+	if rideStatus, found := GetCacheLatestRideStatus(rideID); found {
+		status = rideStatus.Status
 	}
 	return status, nil
 }
@@ -346,10 +346,12 @@ func appPostRides(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rideStatusId := ulid.Make().String()
+	insertStatusTime := time.Now()
 	if _, err := tx.ExecContext(
 		ctx,
-		`INSERT INTO ride_statuses (id, ride_id, status) VALUES (?, ?, ?)`,
-		ulid.Make().String(), rideID, "MATCHING",
+		`INSERT INTO ride_statuses (id, ride_id, status, created_at) VALUES (?, ?, ?, ?)`,
+		rideStatusId, rideID, "MATCHING", insertStatusTime,
 	); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -431,6 +433,9 @@ func appPostRides(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+
+	// キャッシュ ride_status
+	CacheRideStatusWrapper(rideStatusId, rideID, "MATCHING", insertStatusTime, nil, nil)
 
 	writeJSON(w, http.StatusAccepted, &appPostRidesResponse{
 		RideID: rideID,
@@ -562,10 +567,12 @@ func appPostRideEvaluatation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rideStatusId := ulid.Make().String()
+	insertStatusTime := time.Now()
 	_, err = tx.ExecContext(
 		ctx,
-		`INSERT INTO ride_statuses (id, ride_id, status) VALUES (?, ?, ?)`,
-		ulid.Make().String(), rideID, "COMPLETED")
+		`INSERT INTO ride_statuses (id, ride_id, status, created_at) VALUES (?, ?, ?, ?)`,
+		rideStatusId, rideID, "COMPLETED", insertStatusTime)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -625,6 +632,9 @@ func appPostRideEvaluatation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// キャッシュ ride_status
+	CacheRideStatusWrapper(rideStatusId, rideID, "COMPLETED", insertStatusTime, nil, nil)
+
 	writeJSON(w, http.StatusOK, &appPostRideEvaluationResponse{
 		CompletedAt: ride.UpdatedAt.UnixMilli(),
 	})
@@ -673,7 +683,7 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	if err := tx.GetContext(ctx, ride, `SELECT * FROM rides WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`, user.ID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			writeJSON(w, http.StatusOK, &appGetNotificationResponse{
-				RetryAfterMs: 30,
+				RetryAfterMs: 2500,
 			})
 			return
 		}
@@ -744,8 +754,10 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	appSentAt := time.Now()
 	if yetSentRideStatus.ID != "" {
-		_, err := tx.ExecContext(ctx, `UPDATE ride_statuses SET app_sent_at = CURRENT_TIMESTAMP(6) WHERE id = ?`, yetSentRideStatus.ID)
+		appSentAt = time.Now()
+		_, err := tx.ExecContext(ctx, `UPDATE ride_statuses SET app_sent_at = ? WHERE id = ?`, appSentAt, yetSentRideStatus.ID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
@@ -755,6 +767,10 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	if err := tx.Commit(); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
+	}
+
+	if yetSentRideStatus.ID != "" {
+		UpdateCacheRideStatusAppSentAt(yetSentRideStatus.ID, yetSentRideStatus.RideID, appSentAt)
 	}
 
 	writeJSON(w, http.StatusOK, response)
@@ -912,19 +928,24 @@ func appGetNearbyChairs(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 最新の位置情報を取得
+		crc, found := GetCacheChairLocationInfo(chair.ID)
 		chairLocation := &ChairLocation{}
-		err = tx.GetContext(
-			ctx,
-			chairLocation,
-			`SELECT * FROM chair_locations WHERE chair_id = ? ORDER BY created_at DESC LIMIT 1`,
-			chair.ID,
-		)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				continue
+		if found {
+			chairLocation = crc.ChairLocation
+		} else {
+			err = tx.GetContext(
+				ctx,
+				chairLocation,
+				`SELECT * FROM chair_locations WHERE chair_id = ? ORDER BY created_at DESC LIMIT 1`,
+				chair.ID,
+			)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					continue
+				}
+				writeError(w, http.StatusInternalServerError, err)
+				return
 			}
-			writeError(w, http.StatusInternalServerError, err)
-			return
 		}
 
 		if calculateDistance(coordinate.Latitude, coordinate.Longitude, chairLocation.Latitude, chairLocation.Longitude) <= distance {
@@ -1003,4 +1024,27 @@ func calculateDiscountedFare(ctx context.Context, tx *sqlx.Tx, userID string, ri
 	discountedMeteredFare := max(meteredFare-discount, 0)
 
 	return initialFare + discountedMeteredFare, nil
+}
+
+// 最新ride_statusesを取得
+func InitCacheLatestRideStatus(w http.ResponseWriter, ctx context.Context) {
+	rideStatuses := []RideStatus{}
+	if err := db.SelectContext(ctx, &rideStatuses, `
+		SELECT
+			ride_id, 
+    		MAX(created_at) AS created_at,
+    		SUBSTRING_INDEX(GROUP_CONCAT(id ORDER BY created_at DESC), ',', 1) AS id,
+    		SUBSTRING_INDEX(GROUP_CONCAT(status ORDER BY created_at DESC), ',', 1) AS status,
+    		MAX(app_sent_at) AS app_sent_at,
+    		MAX(chair_sent_at) AS chair_sent_at
+		FROM ride_statuses
+		GROUP BY ride_id
+	`); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, rideStatus := range rideStatuses {
+		CacheRideStatus(&rideStatus)
+	}
 }
