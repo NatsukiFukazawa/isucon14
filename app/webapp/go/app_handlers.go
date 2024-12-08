@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -726,6 +727,7 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 
 	if ride.ChairID.Valid {
 		chair, found := chairCache[ride.ChairID.String]
+		fmt.Print("chair", chair)
 		if !found {
 			writeError(w, http.StatusInternalServerError, errors.New("chair not found"))
 			return
