@@ -17,13 +17,12 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"github.com/kaz/pprotein/integration/standalone"
 )
 
 var db *sqlx.DB
 
 func main() {
-	go standalone.Integrate(":8888")
+	// go standalone.Integrate(":8888")
 	mux := setup()
 	slog.Info("Listening on :8080")
 	http.ListenAndServe(":8080", mux)
@@ -68,6 +67,8 @@ func setup() http.Handler {
 		panic(err)
 	}
 	db = _db
+	db.SetMaxOpenConns(100)
+	db.SetConnMaxIdleTime(100)
 
 	mux := chi.NewRouter()
 	mux.Use(middleware.Logger)
