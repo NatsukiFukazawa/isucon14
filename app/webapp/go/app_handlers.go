@@ -547,6 +547,7 @@ func appPostRideEvaluatation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("evaluate", req.Evaluation, rideID)
 	result, err := tx.ExecContext(
 		ctx,
 		`UPDATE rides SET evaluation = ? WHERE id = ?`,
