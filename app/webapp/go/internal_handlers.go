@@ -25,20 +25,17 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 
 	matched := &Chair{}
 	empty := false
-	cacheChairKeys := make([]string, 0, len(chairCache))
-	for key := range chairCache {
-		cacheChairKeys = append(cacheChairKeys, key)
-	}
-	fmt.Println("chairCacheLength", len(chairCache))
 
 	for i := 0; i < 10; i++ {
+		cacheChairKeys := make([]string, 0, len(chairCache))
+		for key := range chairCache {
+			cacheChairKeys = append(cacheChairKeys, key)
+		}
+		fmt.Println("chairCacheLength", len(chairCache))
 		rand.Seed(time.Now().UnixNano())
 		randomKey := cacheChairKeys[rand.Intn(len(cacheChairKeys))]
 		matched = chairCache[randomKey]
-		// if !found {
-		// 	w.WriteHeader(http.StatusNoContent)
-		// 	return
-		// }
+		fmt.Println("randomKey", randomKey)
 
 		if err := db.GetContext(ctx, &empty, "SELECT COUNT(*) = 0 FROM (SELECT COUNT(chair_sent_at) = 6 AS completed FROM ride_statuses WHERE ride_id IN (SELECT id FROM rides WHERE chair_id = ?) GROUP BY ride_id) is_completed WHERE completed = FALSE", matched.ID); err != nil {
 			writeError(w, http.StatusInternalServerError, err)
