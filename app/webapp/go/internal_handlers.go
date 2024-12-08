@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -35,6 +36,7 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
+		fmt.Println("matched", matched, "empty", empty)
 		if empty {
 			break
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -115,6 +116,7 @@ func ownerGetSales(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+	fmt.Println("chairs", chairs)
 
 	res := ownerGetSalesResponse{
 		TotalSales: 0,
@@ -165,16 +167,16 @@ func calculateSale(ride Ride) int {
 }
 
 type chairWithDetail struct {
-	ID                     string       `db:"id"`
-	OwnerID                string       `db:"owner_id"`
-	Name                   string       `db:"name"`
-	AccessToken            string       `db:"access_token"`
-	Model                  string       `db:"model"`
-	IsActive               bool         `db:"is_active"`
-	CreatedAt              time.Time    `db:"created_at"`
-	UpdatedAt              time.Time    `db:"updated_at"`
-	TotalDistance          int          `db:"total_distance"`
-	TotalDistanceUpdatedAt sql.NullTime `db:"total_distance_updated_at"`
+	ID                     string         `db:"id"`
+	OwnerID                string         `db:"owner_id"`
+	Name                   string         `db:"name"`
+	AccessToken            string         `db:"access_token"`
+	Model                  string         `db:"model"`
+	IsActive               bool           `db:"is_active"`
+	CreatedAt              time.Time      `db:"created_at"`
+	UpdatedAt              time.Time      `db:"updated_at"`
+	TotalDistance          int            `db:"total_distance"`
+	TotalDistanceUpdatedAt sql.NullTime   `db:"total_distance_updated_at"`
 	Longitude              sql.NullInt64  `db:"longitude"`
 	Latitude               sql.NullInt64  `db:"latitude"`
 	ChairLocationId        sql.NullString `db:"chair_location_id"`
@@ -203,7 +205,7 @@ func ownerGetChairs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	
+
 	res := ownerGetChairResponse{}
 	for _, chair := range chairs {
 		rideInfo, found := GetCacheChairLocationInfo(chair.ID)
@@ -217,17 +219,17 @@ func ownerGetChairs(w http.ResponseWriter, r *http.Request) {
 			totalDistanceUpdatedAt = &t
 		}
 
-		c := ownerGetChairResponseChair {
-			ID:            chair.ID,
-			Name:          chair.Name,
-			Model:         chair.Model,
-			Active:        chair.IsActive,
-			RegisteredAt:  chair.CreatedAt.UnixMilli(),
-			TotalDistance: totalDistance,
+		c := ownerGetChairResponseChair{
+			ID:                     chair.ID,
+			Name:                   chair.Name,
+			Model:                  chair.Model,
+			Active:                 chair.IsActive,
+			RegisteredAt:           chair.CreatedAt.UnixMilli(),
+			TotalDistance:          totalDistance,
 			TotalDistanceUpdatedAt: totalDistanceUpdatedAt,
 		}
 		res.Chairs = append(res.Chairs, c)
-	} 
+	}
 
 	writeJSON(w, http.StatusOK, res)
 }
@@ -274,7 +276,7 @@ func LoadInitDistance(w http.ResponseWriter, ctx context.Context) {
     		GROUP BY tmp.chair_id
 		) d ON d.chair_id = c.id
 	`); err != nil {
-			writeError(w, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -284,9 +286,9 @@ func LoadInitDistance(w http.ResponseWriter, ctx context.Context) {
 		}
 
 		chairLocation := &ChairLocation{
-			ID: chair.ChairLocationId.String,
-			ChairID: chair.ID,
-			Latitude: int(chair.Latitude.Int64),
+			ID:        chair.ChairLocationId.String,
+			ChairID:   chair.ID,
+			Latitude:  int(chair.Latitude.Int64),
 			Longitude: int(chair.Longitude.Int64),
 			CreatedAt: chair.TotalDistanceUpdatedAt.Time,
 		}
