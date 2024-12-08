@@ -28,7 +28,6 @@ func main() {
 	mux := setup()
 	slog.Info("Listening on :8080")
 	http.ListenAndServe(":8080", mux)
-	chairCache = make(map[string]*Chair)
 }
 
 func setup() http.Handler {
@@ -149,6 +148,7 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		&chairs,
 		`SELECT * FROM chairs`,
 	)
+	chairCache = make(map[string]*Chair)
 	for _, chair := range chairs {
 		chairCache[chair.ID] = &chair
 	}
