@@ -150,7 +150,7 @@ func chairPostCoordinate(w http.ResponseWriter, r *http.Request) {
 		if status != "COMPLETED" && status != "CANCELED" {
 			if req.Latitude == ride.PickupLatitude && req.Longitude == ride.PickupLongitude && status == "ENROUTE" {
 				insertTime = time.Now()
-				if _, err := tx.ExecContext(ctx, "INSERT INTO ride_statuses (id, ride_id, status) VALUES (?, ?, ?, ?)", rideStatusId, ride.ID, "PICKUP", insertTime); err != nil {
+				if _, err := tx.ExecContext(ctx, "INSERT INTO ride_statuses (id, ride_id, status, created_at) VALUES (?, ?, ?, ?)", rideStatusId, ride.ID, "PICKUP", insertTime); err != nil {
 					writeError(w, http.StatusInternalServerError, err)
 					return
 				}
@@ -160,7 +160,7 @@ func chairPostCoordinate(w http.ResponseWriter, r *http.Request) {
 
 			if req.Latitude == ride.DestinationLatitude && req.Longitude == ride.DestinationLongitude && status == "CARRYING" {
 				insertTime = time.Now()
-				if _, err := tx.ExecContext(ctx, "INSERT INTO ride_statuses (id, ride_id, status) VALUES (?, ?, ?, ?)", rideStatusId, ride.ID, "ARRIVED", insertTime); err != nil {
+				if _, err := tx.ExecContext(ctx, "INSERT INTO ride_statuses (id, ride_id, status, created_at) VALUES (?, ?, ?, ?)", rideStatusId, ride.ID, "ARRIVED", insertTime); err != nil {
 					writeError(w, http.StatusInternalServerError, err)
 					return
 				}
@@ -355,7 +355,7 @@ func chairPostRideStatus(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		insertTime = time.Now()
-		if _, err := tx.ExecContext(ctx, "INSERT INTO ride_statuses (id, ride_id, status) VALUES (?, ?, ?, ?)", rideStatusId, ride.ID, "CARRYING", insertTime); err != nil {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO ride_statuses (id, ride_id, status, created_at) VALUES (?, ?, ?, ?)", rideStatusId, ride.ID, "CARRYING", insertTime); err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
