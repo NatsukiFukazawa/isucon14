@@ -193,7 +193,7 @@ func writeAppSSE(
 	clientGone := r.Context().Done()
 
 	rc := http.NewResponseController(w)
-	t := time.NewTicker(time.Duration(30 /* v.RetryAfterMs*/) * time.Millisecond)
+	t := time.NewTicker(time.Duration(1 /* v.RetryAfterMs*/) * time.Second)
 	defer t.Stop()
 	var i int
 	var char string
