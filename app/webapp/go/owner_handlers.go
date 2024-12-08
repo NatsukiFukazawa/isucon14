@@ -258,7 +258,7 @@ func LoadInitDistance(w http.ResponseWriter, ctx context.Context) {
         		MAX(tmp.created_at) AS total_distance_updated_at,
         		-- MAX(created_at)と同じレコードのlatitudeとlongitudeを取得
         		SUBSTRING_INDEX(GROUP_CONCAT(tmp.latitude ORDER BY tmp.created_at DESC), ',', 1) AS latitude,
-        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.longitude ORDER BY tmp.created_at DESC), ',', 1) AS longitude
+        		SUBSTRING_INDEX(GROUP_CONCAT(tmp.longitude ORDER BY tmp.created_at DESC), ',', 1) AS longitude,
         		SUBSTRING_INDEX(GROUP_CONCAT(tmp.id ORDER BY tmp.created_at DESC), ',', 1) AS chair_location_id
     		FROM (
         		SELECT 
