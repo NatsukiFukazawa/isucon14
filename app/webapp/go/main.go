@@ -2,10 +2,6 @@ package main
 
 import (
 	crand "crypto/rand"
-	"time"
-
-	"github.com/goccy/go-json"
-	// "encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -13,6 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
+
+	"github.com/goccy/go-json"
+	// "encoding/json"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -41,7 +41,12 @@ func setup() http.Handler {
 	}
 	_, err := strconv.Atoi(port)
 	if err != nil {
-		panic(fmt.Sprintf("failed to convert DB port number from ISUCON_DB_PORT environment variable into int: %v", err))
+		panic(
+			fmt.Sprintf(
+				"failed to convert DB port number from ISUCON_DB_PORT environment variable into int: %v",
+				err,
+			),
+		)
 	}
 	user := os.Getenv("ISUCON_DB_USER")
 	if user == "" {
@@ -134,7 +139,11 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if out, err := exec.Command("../sql/init.sh").CombinedOutput(); err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Errorf("failed to initialize: %s: %w", string(out), err))
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			fmt.Errorf("failed to initialize: %s: %w", string(out), err),
+		)
 		return
 	}
 
@@ -168,7 +177,12 @@ func writeJSON(w http.ResponseWriter, statusCode int, v interface{}) {
 	w.Write(buf)
 }
 
-func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotificationResponseData, r *http.Request) {
+func writeAppSSE(
+	w http.ResponseWriter,
+	statusCode int,
+	data *appGetNotificationResponseData,
+	r *http.Request,
+) {
 	// const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","status":%s,"created_at":%d,"updated_at":%d}\n`
 	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","stats":{"total_rides_count":%d,"total_evaluation_avg":%d}},"created_at":1733561322336,"updated_at":1733561322690}\n`
 
@@ -191,9 +205,29 @@ func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotification
 		case <-t.C:
 			// Send an event to the client
 			// Here we send only the "data" field, but there are few others
+			if data.Chair == nil {
+				data.Chair = &appGetNotificationResponseChair{}
+			}
 			fmt.Printf("times: %d\nresp: %#v\n", i, data)
 			fmt.Printf("w: %#v\n", w)
-			_, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Chair.Stats.TotalRidesCount, data.Chair.Stats.TotalEvaluationAvg, data.CreatedAt, data.UpdateAt)
+			_, err := fmt.Fprintf(
+				w,
+				appResBase,
+				data.RideID,
+				data.PickupCoordinate.Latitude,
+				data.PickupCoordinate.Latitude,
+				data.DestinationCoordinate.Latitude,
+				data.DestinationCoordinate.Latitude,
+				data.Fare,
+				data.Status,
+				data.Chair.ID,
+				data.Chair.Name,
+				data.Chair.Model,
+				data.Chair.Stats.TotalRidesCount,
+				data.Chair.Stats.TotalEvaluationAvg,
+				data.CreatedAt,
+				data.UpdateAt,
+			)
 			if err != nil {
 				fmt.Println("sse error writing response to client")
 				return
