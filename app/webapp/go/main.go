@@ -243,6 +243,16 @@ func writeAppSSE(
 			}
 		}
 	}
+
+	/*
+		buf, err := json.Marshal(v)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(statusCode)
+		w.Write(buf)
+	*/
 }
 
 func writeError(w http.ResponseWriter, statusCode int, err error) {

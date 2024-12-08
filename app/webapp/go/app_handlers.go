@@ -758,7 +758,7 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// writeJSON(w, http.StatusOK, response)
-	go writeAppSSE(w, http.StatusOK, response.Data, r)
+	writeAppSSE(w, http.StatusOK, response.Data, r)
 }
 
 func getChairStats(ctx context.Context, tx *sqlx.Tx, chairID string) (appGetNotificationResponseChairStats, error) {
