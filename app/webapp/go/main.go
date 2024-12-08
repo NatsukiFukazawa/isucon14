@@ -184,7 +184,7 @@ func writeAppSSE(
 	r *http.Request,
 ) {
 	// const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","status":%s,"created_at":%d,"updated_at":%d}\n`
-	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d",%d,"created_at":%d,"updated_at":%d}\n\n`
+	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":%d,"created_at":%d,"updated_at":%d}\n\n`
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -215,6 +215,8 @@ func writeAppSSE(
 					data.Chair.Stats.TotalRidesCount,
 					data.Chair.Stats.TotalEvaluationAvg,
 				)
+			} else {
+				char = "null"
 			}
 			fmt.Printf("times: %d\nresp: %#v\n", i, data)
 			fmt.Printf("w: %#v\n", w)
