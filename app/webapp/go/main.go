@@ -178,13 +178,12 @@ func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotification
 
 	clientGone := r.Context().Done()
 
-	fmt.Printf("resp: %#v\n", data)
-	fmt.Printf("resp: %#v\n", w)
-
 	rc := http.NewResponseController(w)
 	t := time.NewTicker(time.Duration(1 /* v.RetryAfterMs*/) * time.Second)
 	defer t.Stop()
+	var i int
 	for {
+		i++
 		select {
 		case <-clientGone:
 			fmt.Println("Client disconnected")
@@ -192,7 +191,8 @@ func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotification
 		case <-t.C:
 			// Send an event to the client
 			// Here we send only the "data" field, but there are few others
-			// _, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Status, data.CreatedAt, data.UpdateAt)
+			fmt.Printf("times: %d\nresp: %#v\n", i, data)
+			fmt.Printf("w: %#v\n", w)
 			_, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Chair.Stats.TotalRidesCount, data.Chair.Stats.TotalEvaluationAvg, data.CreatedAt, data.UpdateAt)
 			if err != nil {
 				fmt.Println("sse error writing response to client")
