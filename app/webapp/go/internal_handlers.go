@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
@@ -28,6 +29,7 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 	for key := range chairCache {
 		cacheChairKeys = append(cacheChairKeys, key)
 	}
+	fmt.Println("cacheChairKeys", cacheChairKeys)
 
 	for i := 0; i < 10; i++ {
 		rand.Seed(time.Now().UnixNano())
@@ -36,7 +38,6 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 		if !found {
 			w.WriteHeader(http.StatusNoContent)
 			return
-
 		}
 
 		if err := db.GetContext(ctx, &empty, "SELECT COUNT(*) = 0 FROM (SELECT COUNT(chair_sent_at) = 6 AS completed FROM ride_statuses WHERE ride_id IN (SELECT id FROM rides WHERE chair_id = ?) GROUP BY ride_id) is_completed WHERE completed = FALSE", matched.ID); err != nil {
