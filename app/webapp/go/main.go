@@ -142,7 +142,11 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// chair_locationsのキャッシュ
 	LoadInitDistance(w, ctx)
+
+	// ride_statusesのキャッシュ
+	InitCacheLatestRideStatus(w, ctx)
 
 	writeJSON(w, http.StatusOK, postInitializeResponse{Language: "go"})
 }
