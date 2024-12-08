@@ -29,6 +29,7 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 	for key := range chairCache {
 		cacheChairKeys = append(cacheChairKeys, key)
 	}
+	fmt.Println("chairCacheLength", len(chairCache))
 
 	for i := 0; i < 10; i++ {
 		rand.Seed(time.Now().UnixNano())
