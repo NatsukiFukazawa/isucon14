@@ -184,7 +184,7 @@ func writeAppSSE(
 	r *http.Request,
 ) {
 	// const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","status":%s,"created_at":%d,"updated_at":%d}\n`
-	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d",%d,"created_at":1733561322336,"updated_at":1733561322690}\n\n`
+	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d",%d,"created_at":%d,"updated_at":%d}\n\n`
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
