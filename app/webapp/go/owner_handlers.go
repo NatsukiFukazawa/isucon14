@@ -175,9 +175,9 @@ type chairWithDetail struct {
 	UpdatedAt              time.Time    `db:"updated_at"`
 	TotalDistance          int          `db:"total_distance"`
 	TotalDistanceUpdatedAt sql.NullTime `db:"total_distance_updated_at"`
-	Longitude              int          `db:"longitude"`
-	Latitude               int          `db:"latitude"`
-	ChairLocationId        string       `db:"chair_location_id"`
+	Longitude              sql.NullInt64  `db:"longitude"`
+	Latitude               sql.NullInt64  `db:"latitude"`
+	ChairLocationId        sql.NullString `db:"chair_location_id"`
 }
 
 type ownerGetChairResponse struct {
@@ -279,11 +279,15 @@ func LoadInitDistance(w http.ResponseWriter, ctx context.Context) {
 	}
 
 	for _, chair := range chairs {
+		if !chair.ChairLocationId.Valid {
+			continue
+		}
+
 		chairLocation := &ChairLocation{
-			ID: chair.ChairLocationId,
+			ID: chair.ChairLocationId.String,
 			ChairID: chair.ID,
-			Latitude: chair.Latitude,
-			Longitude: chair.Longitude,
+			Latitude: int(chair.Latitude.Int64),
+			Longitude: int(chair.Longitude.Int64),
 			CreatedAt: chair.TotalDistanceUpdatedAt.Time,
 		}
 		InitCacheLocationInfo(chairLocation, chair.TotalDistance)
