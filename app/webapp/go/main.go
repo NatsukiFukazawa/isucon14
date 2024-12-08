@@ -178,6 +178,9 @@ func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotification
 
 	clientGone := r.Context().Done()
 
+	fmt.Printf("resp: %#v\n", data)
+	fmt.Printf("resp: %#v\n", w)
+
 	rc := http.NewResponseController(w)
 	t := time.NewTicker(time.Duration(30 /* v.RetryAfterMs*/) * time.Millisecond)
 	defer t.Stop()
