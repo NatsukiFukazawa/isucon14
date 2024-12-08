@@ -212,7 +212,7 @@ FROM chairs
                    FROM (SELECT chair_id,
                                 created_at,
                                 ABS(latitude - LAG(latitude) OVER (PARTITION BY chair_id ORDER BY created_at)) +
-                                ABS(longitude - LAG(longitude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance
+                                ABS(longitude - LAG(longleep 20mtude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance
                          FROM chair_locations) tmp
                    GROUP BY chair_id) distance_table ON distance_table.chair_id = chairs.id
 WHERE owner_id = ?
