@@ -730,7 +730,7 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
-		fmt.Println(chair, ride.ChairID)
+		fmt.Println(chair, ride)
 
 		stats, err := getChairStats(ctx, tx, chair.ID)
 		if err != nil {
