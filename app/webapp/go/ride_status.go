@@ -99,9 +99,7 @@ func GetCacheLatestRideStatus(rideId string) (rideStatus *RideStatus, found bool
 	defer mu.RUnlock()
 
 	rideStatusInfo, found := rideStatusCacheMap[rideId]
-	if found {
-		rideStatus = rideStatusInfo.RideStatus
-	}
+	rideStatus = rideStatusInfo.RideStatus
 	return
 }
 
