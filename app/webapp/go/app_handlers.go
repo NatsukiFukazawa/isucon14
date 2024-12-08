@@ -239,8 +239,11 @@ func appGetRides(w http.ResponseWriter, r *http.Request) {
 
 		item.Chair = getAppRidesResponseItemChair{}
 
-		chair := Chair{}
-		chair = chairCache[ride.ChairID.String]
+		chair, found := chairCache[ride.ChairID.String]
+		if !found {
+			writeError(w, http.StatusInternalServerError, errors.New("chair not found"))
+			return
+		}
 
 		item.Chair.ID = chair.ID
 		item.Chair.Name = chair.Name
@@ -722,8 +725,11 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ride.ChairID.Valid {
-		chair := Chair{}
-		chair = chairCache[ride.ChairID.String]
+		chair, found := chairCache[ride.ChairID.String]
+		if !found {
+			writeError(w, http.StatusInternalServerError, errors.New("chair not found"))
+			return
+		}
 
 		stats, err := getChairStats(ctx, tx, chair.ID)
 		if err != nil {
@@ -868,7 +874,7 @@ func appGetNearbyChairs(w http.ResponseWriter, r *http.Request) {
 
 	chairs := []Chair{}
 	for _, chair := range chairCache {
-		chairs = append(chairs, chair)
+		chairs = append(chairs, *chair)
 	}
 
 	nearbyChairs := []appGetNearbyChairsResponseChair{}

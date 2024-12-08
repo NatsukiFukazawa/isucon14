@@ -60,7 +60,7 @@ func chairPostChairs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chairCache[chairID] = *insertedChair
+	chairCache[chairID] = insertedChair
 
 	http.SetCookie(w, &http.Cookie{
 		Path:  "/",
