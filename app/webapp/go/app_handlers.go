@@ -1027,7 +1027,7 @@ func InitCacheLatestRideStatus(w http.ResponseWriter, ctx context.Context) {
 	if err := db.SelectContext(ctx, &rideStatuses, `
 		SELECT
 			ride_id, 
-    		MAX(created_at),
+    		MAX(created_at) AS created_at,
     		SUBSTRING_INDEX(GROUP_CONCAT(id ORDER BY created_at DESC), ',', 1) AS id,
     		SUBSTRING_INDEX(GROUP_CONCAT(status ORDER BY created_at DESC), ',', 1) AS status,
     		SUBSTRING_INDEX(GROUP_CONCAT(app_sent_at ORDER BY created_at DESC), ',', 1) AS app_sent_at,
