@@ -22,6 +22,7 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+	fmt.Println("unmatched_ride", ride)
 
 	matched := &Chair{}
 	empty := false
