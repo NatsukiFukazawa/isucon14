@@ -1020,3 +1020,26 @@ func calculateDiscountedFare(ctx context.Context, tx *sqlx.Tx, userID string, ri
 
 	return initialFare + discountedMeteredFare, nil
 }
+
+// 最新ride_statusesを取得
+func InitCacheLatestRideStatus(w http.ResponseWriter, ctx context.Context) {
+	rideStatuses := []RideStatus{}
+	if err := db.SelectContext(ctx, &rideStatuses, `
+		SELECT
+			ride_id, 
+    		MAX(created_at),
+    		SUBSTRING_INDEX(GROUP_CONCAT(id ORDER BY created_at DESC), ',', 1) AS id,
+    		SUBSTRING_INDEX(GROUP_CONCAT(status ORDER BY created_at DESC), ',', 1) AS status,
+    		SUBSTRING_INDEX(GROUP_CONCAT(app_sent_at ORDER BY created_at DESC), ',', 1) AS app_sent_at,
+    		SUBSTRING_INDEX(GROUP_CONCAT(chair_sent_at ORDER BY created_at DESC), ',', 1) AS chair_sent_at
+		FROM ride_statuses
+		GROUP BY ride_id
+	`); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	for _, rideStatus := range rideStatuses {
+		CacheRideStatus(&rideStatus)
+	}
+}

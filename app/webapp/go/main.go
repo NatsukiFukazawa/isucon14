@@ -142,6 +142,7 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// chair_locationsのキャッシュ
 	LoadInitDistance(w, ctx)
 
 	writeJSON(w, http.StatusOK, postInitializeResponse{Language: "go"})
