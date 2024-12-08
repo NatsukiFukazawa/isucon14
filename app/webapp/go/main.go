@@ -184,7 +184,7 @@ func writeAppSSE(
 	r *http.Request,
 ) {
 	// const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","status":%s,"created_at":%d,"updated_at":%d}\n`
-	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","stats":{"total_rides_count":%d,"total_evaluation_avg":%d}},"created_at":1733561322336,"updated_at":1733561322690}\n`
+	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d",%d,"created_at":1733561322336,"updated_at":1733561322690}\n`
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -196,6 +196,7 @@ func writeAppSSE(
 	t := time.NewTicker(time.Duration(1 /* v.RetryAfterMs*/) * time.Second)
 	defer t.Stop()
 	var i int
+	var char string
 	for {
 		i++
 		select {
@@ -205,8 +206,15 @@ func writeAppSSE(
 		case <-t.C:
 			// Send an event to the client
 			// Here we send only the "data" field, but there are few others
-			if data.Chair == nil {
-				data.Chair = &appGetNotificationResponseChair{}
+			if data.Chair != nil {
+				char = fmt.Sprintf(
+					`"chair":{"id":"%s","name":"%s","model":"%s","stats":{"total_rides_count":%d,"total_evaluation_avg":%d}}`,
+					data.Chair.ID,
+					data.Chair.Name,
+					data.Chair.Model,
+					data.Chair.Stats.TotalRidesCount,
+					data.Chair.Stats.TotalEvaluationAvg,
+				)
 			}
 			fmt.Printf("times: %d\nresp: %#v\n", i, data)
 			fmt.Printf("w: %#v\n", w)
@@ -220,11 +228,7 @@ func writeAppSSE(
 				data.DestinationCoordinate.Latitude,
 				data.Fare,
 				data.Status,
-				data.Chair.ID,
-				data.Chair.Name,
-				data.Chair.Model,
-				data.Chair.Stats.TotalRidesCount,
-				data.Chair.Stats.TotalEvaluationAvg,
+				char,
 				data.CreatedAt,
 				data.UpdateAt,
 			)
