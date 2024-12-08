@@ -729,13 +729,14 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	if ride.ChairID.Valid {
 		chair, found := chairCache[ride.ChairID.String]
 
-		fmt.Println("chair", chair, ride)
+		fmt.Println("chair", chair, found, ride)
 		if !found {
 			writeError(w, http.StatusInternalServerError, errors.New("chair not found"))
 			return
 		}
 
 		stats, err := getChairStats(ctx, tx, chair.ID)
+		fmt.Println("stats", stats)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
@@ -748,6 +749,7 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 			Stats: stats,
 		}
 	}
+	fmt.Println("response", response)
 
 	if yetSentRideStatus.ID != "" {
 		_, err := tx.ExecContext(ctx, `UPDATE ride_statuses SET app_sent_at = CURRENT_TIMESTAMP(6) WHERE id = ?`, yetSentRideStatus.ID)
