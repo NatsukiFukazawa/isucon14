@@ -34,9 +34,8 @@ CREATE TABLE chairs
   updated_at   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新日時',
   PRIMARY KEY (id)
 )
-alter table chairs add index access_token_idx (access_token);
   COMMENT = '椅子情報テーブル';
-
+alter table chairs add index access_token_idx (access_token);
 
 DROP TABLE IF EXISTS chair_locations;
 CREATE TABLE chair_locations
@@ -94,8 +93,8 @@ CREATE TABLE rides
   updated_at            DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '状態更新日時',
   PRIMARY KEY (id)
 )
-alter table rides add index chair_id_updated_at_idx (chair_id, updated_at);
   COMMENT = 'ライド情報テーブル';
+alter table rides add index chair_id_updated_at_idx (chair_id, updated_at);
 
 DROP TABLE IF EXISTS ride_statuses;
 CREATE TABLE ride_statuses
@@ -108,8 +107,8 @@ CREATE TABLE ride_statuses
   chair_sent_at   DATETIME(6)                                                                NULL COMMENT '椅子への状態通知日時',
   PRIMARY KEY (id)
 )
-alter table ride_statuses add index ride_id_idx (ride_id);
   COMMENT = 'ライドステータスの変更履歴テーブル';
+alter table ride_statuses add index ride_id_idx (ride_id);
 
 DROP TABLE IF EXISTS owners;
 CREATE TABLE owners
