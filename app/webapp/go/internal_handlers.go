@@ -44,7 +44,7 @@ func internalGetMatching(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
-		fmt.Println("matched", matched.ID, "empty", empty)
+		fmt.Println("matched", matched.ID, "empty", empty, "ride", ride.ID)
 		if empty {
 			break
 		}
