@@ -193,7 +193,7 @@ func writeAppSSE(
 	clientGone := r.Context().Done()
 
 	rc := http.NewResponseController(w)
-	t := time.NewTicker(time.Duration(1 /* v.RetryAfterMs*/) * time.Second)
+	t := time.NewTicker(time.Duration(30 /* v.RetryAfterMs*/) * time.Millisecond)
 	defer t.Stop()
 	var i int
 	var char string
@@ -243,16 +243,6 @@ func writeAppSSE(
 			}
 		}
 	}
-
-	/*
-		buf, err := json.Marshal(v)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(statusCode)
-		w.Write(buf)
-	*/
 }
 
 func writeError(w http.ResponseWriter, statusCode int, err error) {
