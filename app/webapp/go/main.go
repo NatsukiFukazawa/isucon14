@@ -169,8 +169,8 @@ func writeJSON(w http.ResponseWriter, statusCode int, v interface{}) {
 }
 
 func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotificationResponseData, r *http.Request) {
-	// const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","stats":{"total_rides_count":%d,"total_evaluation_avg":5}},"created_at":1733561322336,"updated_at":1733561322690}\n`
-	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","status":%s,"created_at":%d,"updated_at":%d}\n`
+	// const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","status":%s,"created_at":%d,"updated_at":%d}\n`
+	const appResBase = `data: {"ride_id":"%s","pickup_coordinate":{"latitude":%d,"longitude":%d},"destination_coordinate":{"latitude":%d,"longitude":%d},"fare":%d,"status":"%d","chair":{"id":"%s","name":"%s","model":"%s","stats":{"total_rides_count":%d,"total_evaluation_avg":%d}},"created_at":1733561322336,"updated_at":1733561322690}\n`
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -189,7 +189,8 @@ func writeAppSSE(w http.ResponseWriter, statusCode int, data *appGetNotification
 		case <-t.C:
 			// Send an event to the client
 			// Here we send only the "data" field, but there are few others
-			_, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Status, data.CreatedAt, data.UpdateAt)
+			// _, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Status, data.CreatedAt, data.UpdateAt)
+			_, err := fmt.Fprintf(w, appResBase, data.RideID, data.PickupCoordinate.Latitude, data.PickupCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.DestinationCoordinate.Latitude, data.Fare, data.Status, data.Chair.ID, data.Chair.Name, data.Chair.Model, data.Chair.Stats.TotalRidesCount, data.Chair.Stats.TotalEvaluationAvg, data.CreatedAt, data.UpdateAt)
 			if err != nil {
 				return
 			}
